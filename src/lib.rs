@@ -110,44 +110,56 @@ fn test_str() {
 
 #[cfg(feature = "nightly")]
 #[macro_export]
-/**
+#[doc(hidden)]
+macro_rules! __derive_referent_body {
+    ($Trait:ty) => {
+        type Data = ();
+        type Meta = $crate::nightly::Meta;
 
-*/
+        unsafe fn assemble(data: *const Self::Data, meta: Self::Meta) -> *const Self {
+            ::std::mem::transmute(
+                $crate::nightly::TraitObject::construct(data as *mut (), meta)
+            )
+        }
+
+        unsafe fn assemble_mut(data: *mut Self::Data, meta: Self::Meta) -> *mut Self {
+            ::std::mem::transmute(
+                $crate::nightly::TraitObject::construct(data, meta)
+            )
+        }
+
+        fn disassemble(fatp: *const Self) -> (*const Self::Data, Self::Meta) {
+            let trait_object: $crate::nightly::TraitObject = unsafe {
+                ::std::mem::transmute(fatp)
+            };
+
+            (trait_object.data(), trait_object.meta())
+        }
+
+        fn disassemble_mut(fatp: *mut Self) -> (*mut Self::Data, Self::Meta) {
+            let trait_object: $crate::nightly::TraitObject = unsafe {
+                ::std::mem::transmute(fatp)
+            };
+
+            (trait_object.data(), trait_object.meta())
+        }
+    };
+}
+
+#[cfg(feature = "nightly")]
+#[macro_export]
 macro_rules! derive_referent {
     ($Trait:ty) => {
         impl $crate::Referent for $Trait {
-            type Data = ();
-            type Meta = $crate::nightly::Meta;
-
-            unsafe fn assemble(data: *const Self::Data, meta: Self::Meta) -> *const Self {
-                ::std::mem::transmute(
-                    $crate::nightly::TraitObject::construct(data as *mut (), meta)
-                )
-            }
-
-            unsafe fn assemble_mut(data: *mut Self::Data, meta: Self::Meta) -> *mut Self {
-                ::std::mem::transmute(
-                    $crate::nightly::TraitObject::construct(data, meta)
-                )
-            }
-
-            fn disassemble(fatp: *const Self) -> (*const Self::Data, Self::Meta) {
-                let trait_object: $crate::nightly::TraitObject = unsafe {
-                    ::std::mem::transmute(fatp)
-                };
-
-                (trait_object.data(), trait_object.meta())
-            }
-
-            fn disassemble_mut(fatp: *mut Self) -> (*mut Self::Data, Self::Meta) {
-                let trait_object: $crate::nightly::TraitObject = unsafe {
-                    ::std::mem::transmute(fatp)
-                };
-
-                (trait_object.data(), trait_object.meta())
-            }
+            __derive_referent_body!($Trait);
         }
-    }
+    };
+
+    (<$($args:tt)+>, $Trait:ty) => {
+        impl<$(args)+>, $crate::Referent for $Trait {
+            __derive_referent_body!($Trait);
+        }
+    };
 }
 
 #[cfg(feature = "nightly")]
