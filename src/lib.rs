@@ -1,5 +1,7 @@
 #![cfg_attr(feature = "nightly", feature(raw))]
 
+use std::{str, slice, mem};
+
 /// A trait that is implemented for all types except trait objects, for which it can be derived with the `derive_referent!` macro on nightly. Provides functions to split apart/reconstruct a fat pointer into/from its components.
 pub trait Referent {
     type Data;
@@ -37,8 +39,6 @@ impl<T> Referent for T {
     }
 }
 
-use std::slice;
-
 impl<T> Referent for [T] {
     type Data = T;
     type Meta = usize;
@@ -70,6 +70,42 @@ fn test_slice() {
         &*Referent::assemble(ptr, len)
     };
     assert_eq!(new_slice, slice);
+}
+
+impl Referent for str {
+    type Data = u8;
+    type Meta = usize;
+
+    unsafe fn assemble(p: *const u8, len: usize) -> *const str {
+        str::from_utf8_unchecked(slice::from_raw_parts(p, len))
+    }
+
+    unsafe fn assemble_mut(p: *mut u8, len: usize) -> *mut str {
+        mem::transmute(str::from_utf8_unchecked(slice::from_raw_parts_mut(p, len)))
+    }
+
+    fn disassemble(s: *const str) -> (*const u8, usize) {
+        unsafe {
+            Referent::disassemble((&*s).as_bytes())
+        }
+    }
+
+    fn disassemble_mut(s: *mut str) -> (*mut u8, usize) {
+        unsafe {
+            let bytes: *mut [u8] = mem::transmute((&*s).as_bytes());
+            Referent::disassemble_mut(bytes)
+        }
+    }
+}
+
+#[test]
+fn test_str() {
+    let s = "Yolo123";
+    let (ptr, len) = Referent::disassemble(s);
+    let new_s: &str = unsafe {
+        &*Referent::assemble(ptr, len)
+    };
+    assert_eq!(s, new_s);
 }
 
 #[cfg(feature = "nightly")]
