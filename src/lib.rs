@@ -64,7 +64,7 @@ impl<T> Referent for [T] {
 
 #[test]
 fn test_slice() {
-    let slice = &[1,2,3];
+    let slice = &[1,2,3] as &[i32];
     let (ptr, len) = Referent::disassemble(slice);
     let new_slice: &[i32] = unsafe {
         &*Referent::assemble(ptr, len)
