@@ -3,23 +3,23 @@
 extern crate referent_trait;
 
 trait Foo<'a> {
-    fn foo(&self) -> &'a str;
+    fn foo(&'a self) -> &'a str;
 }
 
-derive_referent!(Foo<'a>);
+derive_referent!(Foo<'a>, 'a);
 
 struct Bar;
 
 impl<'a> Foo<'a> for Bar {
-    fn foo(&self) -> &'static str {
+    fn foo(&'a self) -> &'static str {
         "Bar!"
     }
 }
 
-struct Baz<'a>(String);
+struct Baz(String);
 
-impl<'a> Foo<'a> for Baz<'a> {
-    fn foo(&self) -> &'a str {
+impl<'a> Foo<'a> for Baz {
+    fn foo(&'a self) -> &'a str {
         &self.0
     }
 }
@@ -29,10 +29,17 @@ fn test_reconstruct() {
     use referent_trait::Referent;
 
     let bar = Bar;
-    let baz1 = Baz(String::from("Baz1!"));
-    let baz2 = Baz(String::from("Baz2"));
+    let baz = Baz(String::from("Baz!"));
 
-    let (data, meta) = Referent::disassemble(&bar as &Foo<_>);
-    let bar_ptr: *const Foo<_> = Referent::assemble(data, meta);
-    assert_eq!(bar_ptr.foo(), bar.foo());
+    let (data, meta) = Referent::disassemble(&bar as &Foo);
+    unsafe {
+        let bar_ptr: *const Foo = Referent::assemble(data, meta);
+        assert_eq!((*bar_ptr).foo(), bar.foo());
+    }
+
+    let (data, meta) = Referent::disassemble(&baz as &Foo);
+    unsafe {
+        let baz_ptr: *const Foo = Referent::assemble(data, meta);
+        assert_eq!((*baz_ptr).foo(), "Baz!");
+    }
 }

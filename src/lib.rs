@@ -155,8 +155,8 @@ macro_rules! derive_referent {
         }
     };
 
-    (<$($args:tt)+>, $Trait:ty) => {
-        impl<$(args)+>, $crate::Referent for $Trait {
+    ($Trait:ty, $($args:tt),+ ) => {
+        impl<$($args),+> $crate::Referent for $Trait {
             __derive_referent_body!($Trait);
         }
     };
@@ -223,7 +223,7 @@ fn test_generic_trait_object() {
         fn value(&'a self) -> Cow<'a, T>;
     }
 
-    derive_referent!(<'a, T>, Generic<'a, T>);
+    derive_referent!(Generic<'a, T>, 'a, T);
 
     impl<'a> Generic<'a, i32> for i32 {
         fn value(&'a self) -> Cow<'a, i32> {
