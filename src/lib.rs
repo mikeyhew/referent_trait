@@ -14,12 +14,19 @@ pub trait Referent {
     /// Make a reference from its constituent parts.
     unsafe fn assemble(data: *const Self::Data, meta: Self::Meta) -> *const Self;
 
-    unsafe fn assemble_mut(data: *mut Self::Data, meta: Self::Meta) -> *mut Self;
+    unsafe fn assemble_mut(data: *mut Self::Data, meta: Self::Meta) -> *mut Self {
+        mem::transmute(Self::assemble(data, meta))
+    }
 
     /// Break a reference down into its constituent parts.
     fn disassemble(fatp: *const Self) -> (*const Self::Data, Self::Meta);
 
-    fn disassemble_mut(fatp: *mut Self) -> (*mut Self::Data, Self::Meta);
+    fn disassemble_mut(fatp: *mut Self) -> (*mut Self::Data, Self::Meta) {
+        let (data, meta) = Self::disassemble(fatp);
+        unsafe {
+            (mem::transmute(data), meta)
+        }
+    }
 }
 
 impl<T> Referent for T {
@@ -30,15 +37,7 @@ impl<T> Referent for T {
         p
     }
 
-    unsafe fn assemble_mut(p: *mut T, _: ()) -> *mut T {
-        p
-    }
-
     fn disassemble(p: *const T) -> (*const T, ()) {
-        (p, ())
-    }
-
-    fn disassemble_mut(p: *mut T) -> (*mut T, ()) {
         (p, ())
     }
 }
@@ -51,18 +50,9 @@ impl<T> Referent for [T] {
         slice::from_raw_parts(p, len)
     }
 
-    unsafe fn assemble_mut(p: *mut T, len: usize) -> *mut [T] {
-        slice::from_raw_parts_mut(p, len)
-    }
-
     fn disassemble(slice: *const [T]) -> (*const T, usize) {
         let slice = unsafe { &*slice };
         (slice.as_ptr(), slice.len())
-    }
-
-    fn disassemble_mut(slice: *mut [T]) -> (*mut T, usize) {
-        let slice = unsafe { &mut *slice };
-        (slice.as_mut_ptr(), slice.len())
     }
 }
 
@@ -84,20 +74,9 @@ impl Referent for str {
         str::from_utf8_unchecked(slice::from_raw_parts(p, len))
     }
 
-    unsafe fn assemble_mut(p: *mut u8, len: usize) -> *mut str {
-        mem::transmute(str::from_utf8_unchecked(slice::from_raw_parts_mut(p, len)))
-    }
-
     fn disassemble(s: *const str) -> (*const u8, usize) {
         unsafe {
             Referent::disassemble((&*s).as_bytes())
-        }
-    }
-
-    fn disassemble_mut(s: *mut str) -> (*mut u8, usize) {
-        unsafe {
-            let bytes: *mut [u8] = mem::transmute((&*s).as_bytes());
-            Referent::disassemble_mut(bytes)
         }
     }
 }
@@ -126,21 +105,7 @@ macro_rules! __derive_referent_body {
             )
         }
 
-        unsafe fn assemble_mut(data: *mut Self::Data, meta: Self::Meta) -> *mut Self {
-            $crate::mem::transmute(
-                $crate::nightly::TraitObject::construct(data, meta)
-            )
-        }
-
         fn disassemble(fatp: *const Self) -> (*const Self::Data, Self::Meta) {
-            let trait_object: $crate::nightly::TraitObject = unsafe {
-                $crate::mem::transmute(fatp)
-            };
-
-            (trait_object.data(), trait_object.meta())
-        }
-
-        fn disassemble_mut(fatp: *mut Self) -> (*mut Self::Data, Self::Meta) {
             let trait_object: $crate::nightly::TraitObject = unsafe {
                 $crate::mem::transmute(fatp)
             };
