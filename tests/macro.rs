@@ -27,6 +27,7 @@ fn test_non_generic_trait_object() {
     assert_eq!(new_foo.foo(), "5");
 }
 
+#[test]
 fn test_generic_trait_object() {
     use std::borrow::Cow;
     use std::borrow::Cow::*;
