@@ -1,8 +1,8 @@
 #![cfg(feature = "nightly")]
 #[macro_use]
-extern crate referent_trait;
+extern crate referent;
 
-use referent_trait::Referent;
+use referent::Referent;
 
 #[test]
 fn test_non_generic_trait_object() {

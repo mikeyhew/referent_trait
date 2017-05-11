@@ -1,6 +1,6 @@
 #![cfg(feature = "nightly")]
 #[macro_use]
-extern crate referent_trait;
+extern crate referent;
 
 trait Foo<'a> {
     fn foo(&'a self) -> &'a str;
@@ -26,7 +26,7 @@ impl<'a> Foo<'a> for Baz {
 
 #[test]
 fn test_reconstruct() {
-    use referent_trait::Referent;
+    use referent::Referent;
 
     let bar = Bar;
     let baz = Baz(String::from("Baz!"));
