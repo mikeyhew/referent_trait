@@ -1,6 +1,10 @@
+#![no_std]
 #![cfg_attr(feature = "nightly", feature(raw))]
 
-use std::{str, slice, mem};
+use core::{str, slice};
+
+#[doc(hidden)]
+pub use core::mem;
 
 /// A trait that is implemented for all types except trait objects, for which it can be derived with the `derive_referent!` macro on nightly. Provides functions to split apart/reconstruct a fat pointer into/from its components.
 pub trait Referent {
@@ -117,20 +121,20 @@ macro_rules! __derive_referent_body {
         type Meta = $crate::nightly::Meta;
 
         unsafe fn assemble(data: *const Self::Data, meta: Self::Meta) -> *const Self {
-            ::std::mem::transmute(
+            $crate::mem::transmute(
                 $crate::nightly::TraitObject::construct(data as *mut (), meta)
             )
         }
 
         unsafe fn assemble_mut(data: *mut Self::Data, meta: Self::Meta) -> *mut Self {
-            ::std::mem::transmute(
+            $crate::mem::transmute(
                 $crate::nightly::TraitObject::construct(data, meta)
             )
         }
 
         fn disassemble(fatp: *const Self) -> (*const Self::Data, Self::Meta) {
             let trait_object: $crate::nightly::TraitObject = unsafe {
-                ::std::mem::transmute(fatp)
+                $crate::mem::transmute(fatp)
             };
 
             (trait_object.data(), trait_object.meta())
@@ -138,7 +142,7 @@ macro_rules! __derive_referent_body {
 
         fn disassemble_mut(fatp: *mut Self) -> (*mut Self::Data, Self::Meta) {
             let trait_object: $crate::nightly::TraitObject = unsafe {
-                ::std::mem::transmute(fatp)
+                $crate::mem::transmute(fatp)
             };
 
             (trait_object.data(), trait_object.meta())
@@ -165,7 +169,7 @@ macro_rules! derive_referent {
 #[cfg(feature = "nightly")]
 #[doc(hidden)]
 pub mod nightly {
-    use std::raw;
+    use core::raw;
 
     #[derive(Copy, Clone)]
     pub struct Meta(*mut ());
@@ -189,56 +193,4 @@ pub mod nightly {
             Meta(self.0.vtable)
         }
     }
-}
-
-#[test]
-fn test_non_generic_trait_object() {
-    trait Foo {
-        fn foo(&self) -> String;
-    }
-
-    derive_referent!(Foo);
-
-    impl Foo for usize {
-        fn foo(&self) -> String {
-            format!("{}", self)
-        }
-    }
-
-    let foo = &(5 as usize) as &Foo;
-    let (data, meta) = Referent::disassemble(foo);
-    let new_foo: &Foo = unsafe {
-        &*Referent::assemble(data, meta)
-    };
-
-    assert_eq!(new_foo.foo(), "5");
-}
-
-#[test]
-fn test_generic_trait_object() {
-    use std::borrow::Cow;
-    use std::borrow::Cow::*;
-
-    trait Generic<'a, T: Clone> {
-        fn value(&'a self) -> Cow<'a, T>;
-    }
-
-    derive_referent!(Generic<'a, T>, 'a, T);
-
-    impl<'a> Generic<'a, i32> for i32 {
-        fn value(&'a self) -> Cow<'a, i32> {
-            Borrowed(self)
-        }
-    }
-
-    let i = &1 as &Generic<i32>;
-
-    let (data, meta) = Referent::disassemble(i);
-
-    let new_i: &Generic<i32> = unsafe {
-        &*Referent::assemble(data, meta)
-    };
-
-    assert_eq!(new_i.value(), i.value());
-
 }
