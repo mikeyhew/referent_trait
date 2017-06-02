@@ -43,3 +43,18 @@ fn test_reconstruct() {
         assert_eq!((*baz_ptr).foo(), "Baz!");
     }
 }
+
+#[test]
+fn test_ptr_ext() {
+    use referent::{Referent, PtrExt, PtrMutExt};
+
+    let ptr = &mut [1,2,3];
+    let (data, meta) = Referent::disassemble_mut(ptr);
+    assert_eq!(data, ptr.data());
+    assert_eq!(meta, ptr.meta());
+
+    let ptr = "foo";
+    let (data, meta) = Referent::disassemble(ptr);
+    assert_eq!(data, ptr.data());
+    assert_eq!(meta, ptr.meta());
+}
