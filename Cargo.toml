@@ -2,6 +2,8 @@
 name = "referent"
 version = "0.1.1"
 authors = ["Michael Hewson <michael@michaelhewson.ca>"]
+description = "A trait for working with pointers to `?Sized` types, letting you separate them into a thin pointer and metadata, and reassemble from those parts"
+license = "MIT/Apache-2.0"
 
 [features]
 default = ["nightly"]
