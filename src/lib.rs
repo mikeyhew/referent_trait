@@ -1,7 +1,7 @@
 #![no_std]
 #![cfg_attr(feature = "nightly", feature(raw))]
 
-use core::{str, slice};
+use core::{str, slice, ptr};
 
 #[doc(hidden)]
 pub use core::mem;
@@ -26,6 +26,22 @@ pub trait Referent {
         unsafe {
             (mem::transmute(data), meta)
         }
+    }
+
+    fn size_of_val(meta: Self::Meta) -> usize {
+        let r = unsafe {
+            &*Self::assemble(ptr::null(), meta)
+        };
+
+        mem::size_of_val(r)
+    }
+
+    fn align_of_val(meta: Self::Meta) -> usize {
+        let r = unsafe {
+            &*Self::assemble(ptr::null(), meta)
+        };
+
+        mem::align_of_val(r)
     }
 }
 
