@@ -1,0 +1,6 @@
+--- v0.1.1
+  - add `Referent::size_of_val` and `Referent::align_of_val`
+  - add `PtrExt` to add a `meta` method to pointer types
+
+--- v0.1.0
+  - initial version
