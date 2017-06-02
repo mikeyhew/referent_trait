@@ -152,7 +152,7 @@ macro_rules! derive_referent {
 pub mod nightly {
     use core::raw;
 
-    #[derive(Copy, Clone)]
+    #[derive(Copy, Clone, Debug, PartialEq)]
     pub struct Meta(*mut ());
 
     #[derive(Copy, Clone)]
@@ -180,8 +180,6 @@ pub trait PtrExt {
     type Referred: Referent + ?Sized;
 
     fn meta(self) -> <Self::Referred as Referent>::Meta;
-
-    fn data(self) -> *const <Self::Referred as Referent>::Data;
 }
 
 impl<T: Referent + ?Sized> PtrExt for *const T {
@@ -191,11 +189,6 @@ impl<T: Referent + ?Sized> PtrExt for *const T {
         let (_, meta) = T::disassemble(self);
         meta
     }
-
-    fn data(self) -> *const T::Data {
-        let (data, _) = T::disassemble(self);
-        data
-    }
 }
 
 impl<'a, T: Referent + ?Sized + 'a> PtrExt for &'a T {
@@ -204,42 +197,20 @@ impl<'a, T: Referent + ?Sized + 'a> PtrExt for &'a T {
     fn meta(self) -> T::Meta  {
         (self as *const T).meta()
     }
-
-    fn data(self) -> *const T::Data {
-        (self as *const T).data()
-    }
 }
 
-pub trait PtrMutExt {
-    type Referred: Referent + ?Sized;
-
-    fn meta(self) -> <Self::Referred as Referent>::Meta;
-
-    fn data(self) -> *mut <Self::Referred as Referent>::Data;
-}
-
-impl<T: Referent + ?Sized> PtrMutExt for *mut T {
+impl<T: Referent + ?Sized> PtrExt for *mut T {
     type Referred = T;
 
     fn meta(self) -> T::Meta  {
-        let (_, meta) = T::disassemble(self);
-        meta
-    }
-
-    fn data(self) -> *mut T::Data {
-        let (data, _) = T::disassemble_mut(self);
-        data
+        (self as *const T).meta()
     }
 }
 
-impl<'a, T: Referent + ?Sized + 'a> PtrMutExt for &'a mut T {
+impl<'a, T: Referent + ?Sized + 'a> PtrExt for &'a mut T {
     type Referred = T;
 
     fn meta(self) -> T::Meta  {
-        (self as *mut T).meta()
-    }
-
-    fn data(self) -> *mut T::Data {
-        (self as *mut T).data()
+        (self as *const T).meta()
     }
 }

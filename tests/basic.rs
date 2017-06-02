@@ -46,15 +46,13 @@ fn test_reconstruct() {
 
 #[test]
 fn test_ptr_ext() {
-    use referent::{Referent, PtrExt, PtrMutExt};
+    use referent::{Referent, PtrExt};
 
     let ptr = &mut [1,2,3];
-    let (data, meta) = Referent::disassemble_mut(ptr);
-    assert_eq!(data, ptr.data());
+    let (_, meta) = Referent::disassemble_mut(ptr);
     assert_eq!(meta, ptr.meta());
 
-    let ptr = "foo";
-    let (data, meta) = Referent::disassemble(ptr);
-    assert_eq!(data, ptr.data());
+    let ptr = &Bar as &Foo;
+    let (_, meta) = Referent::disassemble(ptr);
     assert_eq!(meta, ptr.meta());
 }
